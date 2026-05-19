@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Data
+data/raw/
+data/processed/
+
+# SQLite
+*.db
+
+# VSCode
+.vscode/
+
+# Mac
+.DS_Store
