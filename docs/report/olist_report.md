@@ -1,24 +1,24 @@
-# Bao cao do an: Olist E-Commerce Analytics
+# Báo cáo đồ án: Olist E-Commerce Analytics
 
-## 1. Gioi thieu bai toan
+## 1. Giới thiệu bài toán
 
-Do an phan tich du lieu thuong mai dien tu Olist de hieu hanh vi mua hang, doanh thu, van chuyen, thanh toan va muc do hai long cua khach hang. He thong ket hop data warehouse, Iceberg Cube va classification model de ho tro phan tich kinh doanh va canh bao nguy co review xau.
+Đồ án phân tích dữ liệu thương mại điện tử Olist để hiểu hành vi mua hàng, doanh thu, vận chuyển, thanh toán và mức độ hài lòng của khách hàng. Hệ thống kết hợp data warehouse, Iceberg Cube và classification model để hỗ trợ phân tích kinh doanh và cảnh báo nguy cơ review xấu.
 
-## 2. Mo ta dataset
+## 2. Mô tả dataset
 
-Dataset gom 9 bang CSV:
+Dataset gồm 9 bảng CSV:
 
-- `orders`: thong tin don hang va cac moc thoi gian.
-- `customers`: thong tin vi tri khach hang.
-- `order_items`: chi tiet san pham trong tung don hang.
-- `order_payments`: thanh toan.
-- `order_reviews`: diem review va comment.
-- `products`: san pham va category.
-- `sellers`: nguoi ban.
-- `geolocation`: toa do theo zip code prefix.
-- `product_category_name_translation`: dich category sang tieng Anh.
+- `orders`: thông tin đơn hàng và các mốc thời gian.
+- `customers`: thông tin vị trí khách hàng.
+- `order_items`: chi tiết sản phẩm trong từng đơn hàng.
+- `order_payments`: thanh toán.
+- `order_reviews`: điểm review và comment.
+- `products`: sản phẩm và category.
+- `sellers`: người bán.
+- `geolocation`: tọa độ theo zip code prefix.
+- `product_category_name_translation`: dịch category sang tiếng Anh.
 
-Quan he chinh:
+Quan hệ chính:
 
 - `orders.customer_id` -> `customers.customer_id`
 - `order_items.order_id` -> `orders.order_id`
@@ -30,37 +30,37 @@ Quan he chinh:
 
 ## 3. EDA
 
-Can trinh bay cac nhom phan tich:
+Các nhóm phân tích chính:
 
-- Don hang theo thoi gian.
-- Doanh thu theo thang, category, state va seller.
-- Phan bo order status.
-- Phan bo payment type va installments.
-- Delivery days, delay days va delay rate.
-- Review score va lien he giua delivery delay voi review xau.
+- Đơn hàng theo thời gian.
+- Doanh thu theo tháng, category, state và seller.
+- Phân bố order status.
+- Phân bố payment type và installments.
+- Delivery days, delay days và delay rate.
+- Review score và liên hệ giữa giao hàng trễ với review xấu.
 
-## 4. Tien xu ly
+## 4. Tiền xử lý
 
-Cac thao tac da thiet ke trong pipeline:
+Các thao tác đã thiết kế trong pipeline:
 
-- Chuyen timestamp sang datetime.
-- Chuyen cot tien va so luong sang numeric.
-- Xu ly missing product category bang `unknown`.
-- Dien missing product dimension bang median.
-- Tong hop item/payment/review ve muc order-level.
-- Tao feature: `delivery_days`, `delay_days`, `is_delayed`, `freight_ratio`, `item_count`, `order_month`, `order_day_of_week`.
-- Tao target `bad_review` tu `review_score`.
+- Chuyển timestamp sang datetime.
+- Chuyển cột tiền và số lượng sang numeric.
+- Xử lý missing product category bằng `unknown`.
+- Điền missing product dimension bằng median.
+- Tổng hợp item/payment/review về mức order-level.
+- Tạo feature: `delivery_days`, `delay_days`, `is_delayed`, `freight_ratio`, `item_count`, `order_month`, `order_day_of_week`.
+- Tạo target `bad_review` từ `review_score`.
 
 ## 5. Data Warehouse
 
-Warehouse dung PostgreSQL hoac SQL Server, khong dung SQLite.
+Warehouse dùng PostgreSQL hoặc SQL Server, không dùng SQLite.
 
 Star schema:
 
 - Fact: `fact_order_items`
 - Dimensions: `dim_date`, `dim_customer`, `dim_seller`, `dim_product`, `dim_payment`, `dim_order_status`
 
-Grain cua fact table: 1 dong = 1 item trong 1 order.
+Grain của fact table: 1 dòng = 1 item trong 1 order.
 
 Measures:
 
@@ -74,34 +74,34 @@ Measures:
 
 ## 6. Iceberg Cube
 
-Iceberg Cube giu lai cac nhom tong hop co y nghia theo threshold:
+Iceberg Cube giữ lại các nhóm tổng hợp có ý nghĩa theo threshold:
 
 - `count_orders >= 100`
-- hoac `sum_revenue >= 10000/15000`
-- hoac `bad_review_rate >= 0.25` voi support du lon
+- hoặc `sum_revenue >= 10000/15000`
+- hoặc `bad_review_rate >= 0.25` với support đủ lớn
 
-Cac chu de cube:
+Các chủ đề cube:
 
-- Doanh thu theo thoi gian, category, state.
-- Chat luong giao hang theo seller state, category, delay.
-- Muc do hai long theo payment type va installments.
-- Trade lane theo customer state va seller state.
+- Doanh thu theo thời gian, category và state.
+- Chất lượng giao hàng theo seller state, category và delay.
+- Mức độ hài lòng theo payment type và installments.
+- Trade lane theo customer state và seller state.
 
 ## 7. Classification
 
-Bai toan: du doan don hang co review xau hay khong.
+Bài toán: dự đoán đơn hàng có review xấu hay không.
 
 Target:
 
-- `bad_review = 1` neu `review_score <= 2`.
-- `bad_review = 0` neu `review_score >= 4`.
-- Loai review 3 sao khi train.
+- `bad_review = 1` nếu `review_score <= 2`.
+- `bad_review = 0` nếu `review_score >= 4`.
+- Loại review 3 sao khi train.
 
 Model:
 
 - Logistic Regression baseline.
-- Random Forest model mac dinh.
-- Co the thu HistGradientBoosting.
+- Random Forest model mặc định.
+- Có thể thử HistGradientBoosting.
 
 Metrics:
 
@@ -112,16 +112,16 @@ Metrics:
 - ROC-AUC
 - Confusion matrix
 
-## 8. Ung dung
+## 8. Ứng dụng
 
-Streamlit app gom:
+Streamlit app gồm:
 
 - Overview dashboard.
 - EDA dashboard.
 - Iceberg Cube explorer.
 - Prediction form cho bad review risk.
 
-FastAPI gom:
+FastAPI gồm:
 
 - `/health`
 - `/summary`
@@ -129,6 +129,6 @@ FastAPI gom:
 - `/cube`
 - `/predict`
 
-## 9. Ket luan
+## 9. Kết luận
 
-Do an da chuyen tu scaffold Reddit sang mot pipeline phan tich Olist day du hon, bam sat yeu cau mon hoc: dataset kinh te, EDA, preprocessing, data warehouse, Iceberg Cube, classification va web app.
+Đồ án đã chuyển từ scaffold Reddit sang một pipeline phân tích Olist đầy đủ hơn, bám sát yêu cầu môn học: dataset kinh tế, EDA, preprocessing, data warehouse, Iceberg Cube, classification và web app.

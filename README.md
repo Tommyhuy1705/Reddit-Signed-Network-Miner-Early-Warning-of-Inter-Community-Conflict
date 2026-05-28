@@ -1,85 +1,89 @@
-# Olist E-Commerce Analytics: Data Warehouse, Iceberg Cube and Bad Review Prediction
+# Olist E-Commerce Analytics: Data Warehouse, Iceberg Cube và Dự Đoán Review Xấu
 
-## 1. Gioi thieu
+## 1. Giới thiệu
 
-Du an nay phan tich bo du lieu **Brazilian E-Commerce Public Dataset by Olist** tren Kaggle. Day la bo du lieu thuong mai dien tu da an danh, mo ta don hang, khach hang, seller, san pham, thanh toan, van chuyen, review va vi tri dia ly cua marketplace Olist tai Brazil.
+Dự án này phân tích bộ dữ liệu **Brazilian E-Commerce Public Dataset by Olist** trên Kaggle. Đây là bộ dữ liệu thương mại điện tử đã được ẩn danh, mô tả đơn hàng, khách hàng, người bán, sản phẩm, thanh toán, vận chuyển, review và vị trí địa lý của marketplace Olist tại Brazil.
 
-Muc tieu do an:
+Mục tiêu đồ án:
 
-- Mo ta day du bo du lieu va cac quan he giua bang.
-- Thuc hien EDA de rut ra insight kinh doanh.
-- Tien xu ly va tao dac trung phuc vu khai pha du lieu.
-- Xay dung data warehouse bang PostgreSQL hoac SQL Server.
-- Tinh toan Iceberg Cube de tim cac mau tong hop co y nghia.
-- Huan luyen mo hinh classification du doan don hang co kha nang nhan review xau.
-- Trien khai API va ung dung Streamlit dashboard.
+- Mô tả đầy đủ bộ dữ liệu và quan hệ giữa các bảng.
+- Thực hiện EDA để rút ra insight kinh doanh.
+- Tiền xử lý dữ liệu và tạo đặc trưng phục vụ khai phá dữ liệu.
+- Xây dựng data warehouse bằng PostgreSQL hoặc SQL Server.
+- Tính toán Iceberg Cube để tìm các mẫu tổng hợp có ý nghĩa.
+- Huấn luyện mô hình classification dự đoán đơn hàng có khả năng nhận review xấu.
+- Triển khai API và ứng dụng Streamlit dashboard.
 
 ## 2. Dataset
 
-Dat 9 file CSV cua Olist trong thu muc `dataset/`:
+Đặt 9 file CSV của Olist trong thư mục `dataset/`:
 
-| File | Vai tro |
+| File | Vai trò |
 |---|---|
-| `olist_orders_dataset.csv` | Don hang, trang thai va moc thoi gian |
-| `olist_customers_dataset.csv` | Khach hang, city/state/zip prefix |
-| `olist_order_items_dataset.csv` | Item trong don hang, seller, gia va phi van chuyen |
-| `olist_order_payments_dataset.csv` | Phuong thuc thanh toan va gia tri thanh toan |
-| `olist_order_reviews_dataset.csv` | Review score va comment |
-| `olist_products_dataset.csv` | San pham, category, kich thuoc, khoi luong |
-| `olist_sellers_dataset.csv` | Seller, city/state/zip prefix |
-| `olist_geolocation_dataset.csv` | Toa do theo zip code prefix |
-| `product_category_name_translation.csv` | Dich category sang tieng Anh |
+| `olist_orders_dataset.csv` | Đơn hàng, trạng thái và các mốc thời gian |
+| `olist_customers_dataset.csv` | Khách hàng, thành phố, bang và zip prefix |
+| `olist_order_items_dataset.csv` | Item trong đơn hàng, seller, giá và phí vận chuyển |
+| `olist_order_payments_dataset.csv` | Phương thức thanh toán và giá trị thanh toán |
+| `olist_order_reviews_dataset.csv` | Điểm review và comment |
+| `olist_products_dataset.csv` | Sản phẩm, danh mục, kích thước và khối lượng |
+| `olist_sellers_dataset.csv` | Người bán, thành phố, bang và zip prefix |
+| `olist_geolocation_dataset.csv` | Tọa độ theo zip code prefix |
+| `product_category_name_translation.csv` | Dịch danh mục sản phẩm sang tiếng Anh |
 
-Thong tin nhanh da kiem tra:
+Thông tin nhanh đã kiểm tra:
 
-- Orders: 99,441 dong.
-- Order items: 112,650 dong.
-- Payments: 103,886 dong.
-- Reviews: 99,224 dong.
-- Products: 32,951 dong.
-- Sellers: 3,095 dong.
-- Geolocation: 1,000,163 dong.
-- Khoang thoi gian don hang: 2016-09-04 den 2018-10-17.
+- Orders: 99,441 dòng.
+- Order items: 112,650 dòng.
+- Payments: 103,886 dòng.
+- Reviews: 99,224 dòng.
+- Products: 32,951 dòng.
+- Sellers: 3,095 dòng.
+- Geolocation: 1,000,163 dòng.
+- Khoảng thời gian đơn hàng: từ 2016-09-04 đến 2018-10-17.
 
-## 3. Cau truc du an
+## 3. Cấu trúc dự án
 
 ```text
 .
 ├── api/                         # FastAPI service
 ├── app/                         # Streamlit dashboard
-├── dataset/                     # Raw Olist CSV files
+├── dataset/                     # Raw Olist CSV files, không commit
 ├── data/
-│   ├── processed/               # Generated processed CSV files
-│   └── warehouse/               # Generated Iceberg Cube CSV exports
-├── docs/                        # Project tasks and report
-├── models/                      # Generated trained model and metrics
-├── notebooks/                   # EDA, preprocessing, DWH/cube, classification notebooks
-├── scripts/                     # Reproducible pipeline scripts
-└── src/                         # ETL, OLAP, ML and config modules
+│   ├── processed/               # Processed CSV được sinh từ pipeline
+│   └── warehouse/               # Kết quả Iceberg Cube dạng CSV
+├── docs/                        # Checklist, hướng dẫn database và report
+├── models/                      # Model đã train và metrics, không commit file nặng
+├── notebooks/                   # EDA, preprocessing, DWH/cube, classification
+├── scripts/                     # Pipeline scripts có thể chạy lại
+└── src/                         # ETL, OLAP, ML và cấu hình
 ```
 
-## 4. Cai dat
+## 4. Cài đặt
+
+Khuyến nghị dùng môi trường ảo `.venv312` đã tạo trong project:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv312\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Neu virtual environment cua ban co cau truc `bin/`:
+Nếu tạo môi trường mới:
 
 ```powershell
-.\.venv\bin\Activate.ps1
+python -m venv .venv312
+.\.venv312\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Luu y: nen dung Python chinh thuc tu python.org hoac conda. Neu dung Python MSYS2/UCRT, pip co the build pandas/numpy tu source va loi SSL/cmake.
+Lưu ý: nên dùng Python chính thức từ python.org hoặc conda. Python MSYS2/UCRT có thể khiến pip build pandas/numpy từ source và phát sinh lỗi SSL/cmake.
 
-## 5. Cau hinh database
+## 5. Cấu hình database
 
-Du an khong dung SQLite cho warehouse. Mac dinh loader dung PostgreSQL.
+Dự án **không dùng SQLite** cho warehouse. Loader hỗ trợ PostgreSQL và SQL Server.
 
-Sao chep `.env.example` thanh `.env`, sau do sua thong tin database:
+Sao chép `.env.example` thành `.env`, sau đó sửa thông tin database.
+
+PostgreSQL:
 
 ```env
 OLIST_DB_DIALECT=postgresql
@@ -90,7 +94,7 @@ OLIST_DB_USER=postgres
 OLIST_DB_PASSWORD=postgres
 ```
 
-Neu dung SQL Server:
+SQL Server:
 
 ```env
 OLIST_DB_DIALECT=mssql
@@ -102,35 +106,33 @@ OLIST_DB_PASSWORD=YourStrongPassword
 OLIST_DB_DRIVER=ODBC Driver 17 for SQL Server
 ```
 
-Can tao database `olist_dwh` truoc trong PostgreSQL/SQL Server.
+## 6. Chạy pipeline
 
-## 6. Chay pipeline
-
-Tao processed data va star schema CSV:
+Tạo processed data và star schema CSV:
 
 ```powershell
 python scripts/build_processed.py
 ```
 
-Load star schema vao PostgreSQL hoac SQL Server:
+Load star schema vào PostgreSQL hoặc SQL Server:
 
 ```powershell
 python scripts/load_warehouse.py
 ```
 
-Chay Iceberg Cube:
+Chạy Iceberg Cube:
 
 ```powershell
 python scripts/run_iceberg_cube.py
 ```
 
-Train classification model:
+Train mô hình classification:
 
 ```powershell
 python scripts/train_bad_review_model.py
 ```
 
-## 7. Chay ung dung
+## 7. Chạy ứng dụng
 
 API:
 
@@ -144,24 +146,24 @@ Streamlit:
 streamlit run app/Home.py
 ```
 
-## 8. Bai toan classification
+## 8. Bài toán classification
 
-Mo hinh du doan `bad_review`:
+Mô hình dự đoán `bad_review`:
 
-- `bad_review = 1` neu `review_score <= 2`.
-- `bad_review = 0` neu `review_score >= 4`.
-- Bo qua `review_score = 3` khi train de tranh nhan trung tinh.
+- `bad_review = 1` nếu `review_score <= 2`.
+- `bad_review = 0` nếu `review_score >= 4`.
+- Bỏ qua `review_score = 3` khi train để tránh nhãn trung tính.
 
-Feature chinh:
+Feature chính:
 
-- Gia tri don hang, phi ship, ti le ship/gia.
-- Payment type, installments.
-- So item, so product, so seller.
+- Giá trị đơn hàng, phí ship, tỷ lệ phí ship trên giá trị hàng.
+- Payment type và số kỳ trả góp.
+- Số item, số sản phẩm, số seller.
 - Category, customer state, seller state.
 - Delivery days, delay days, delayed flag.
-- Thang mua hang, thu trong tuan.
+- Tháng mua hàng và thứ trong tuần.
 
-## 9. Data warehouse va Iceberg Cube
+## 9. Data warehouse và Iceberg Cube
 
 Star schema:
 
@@ -173,14 +175,15 @@ Star schema:
 - `dim_payment`
 - `dim_order_status`
 
-Iceberg Cube duoc tinh theo cac chu de:
+Iceberg Cube được tính theo các chủ đề:
 
-- Sales by time, category and customer state.
-- Delivery quality by seller state, category and delay flag.
-- Payment satisfaction by payment type, installments and review group.
-- Geographic trade lanes by customer state, seller state and review group.
+- Doanh thu theo thời gian, danh mục và bang của khách hàng.
+- Chất lượng giao hàng theo bang của seller, danh mục và trạng thái trễ.
+- Mức độ hài lòng theo phương thức thanh toán, nhóm trả góp và nhóm review.
+- Luồng giao dịch theo bang khách hàng, bang seller và nhóm review.
 
-## 10. Tai lieu
+## 10. Tài liệu
 
-- Checklist cong viec: `docs/olist_project_tasks.md`
+- Checklist công việc: `docs/olist_project_tasks.md`
+- Hướng dẫn database: `docs/database_setup.md`
 - Report khung: `docs/report/olist_report.md`

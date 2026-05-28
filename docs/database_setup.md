@@ -1,10 +1,10 @@
-# Database setup cho PostgreSQL hoac SQL Server
+# Hướng dẫn setup database cho PostgreSQL hoặc SQL Server
 
-Du an khong dung SQLite cho data warehouse. Pipeline dung SQLAlchemy de load star schema vao PostgreSQL hoac SQL Server.
+Dự án không dùng SQLite cho data warehouse. Pipeline dùng SQLAlchemy để load star schema vào PostgreSQL hoặc SQL Server.
 
 ## 1. PostgreSQL
 
-Tao database:
+Tạo database:
 
 ```sql
 CREATE DATABASE olist_dwh;
@@ -21,7 +21,7 @@ OLIST_DB_USER=postgres
 OLIST_DB_PASSWORD=postgres
 ```
 
-Chay loader:
+Chạy loader:
 
 ```powershell
 python scripts/load_warehouse.py
@@ -29,7 +29,7 @@ python scripts/load_warehouse.py
 
 ## 2. SQL Server
 
-Tao database:
+Tạo database:
 
 ```sql
 CREATE DATABASE olist_dwh;
@@ -48,13 +48,13 @@ OLIST_DB_PASSWORD=YourStrongPassword
 OLIST_DB_DRIVER=ODBC Driver 17 for SQL Server
 ```
 
-Chay loader:
+Chạy loader:
 
 ```powershell
 python scripts/load_warehouse.py
 ```
 
-## 3. Cac bang warehouse
+## 3. Các bảng warehouse
 
 - `dim_date`
 - `dim_customer`
@@ -64,11 +64,11 @@ python scripts/load_warehouse.py
 - `dim_order_status`
 - `fact_order_items`
 
-Grain cua fact table: 1 dong = 1 item trong 1 order.
+Grain của fact table: 1 dòng = 1 item trong 1 order.
 
-## 4. Query OLAP mau
+## 4. Query OLAP mẫu
 
-Doanh thu theo thang:
+Doanh thu theo tháng:
 
 ```sql
 SELECT
@@ -97,7 +97,7 @@ GROUP BY p.product_category_name_english
 ORDER BY revenue DESC;
 ```
 
-Delay rate theo seller state:
+Delay rate theo bang của seller:
 
 ```sql
 SELECT
@@ -112,7 +112,7 @@ HAVING COUNT(DISTINCT f.order_id) >= 100
 ORDER BY delay_rate DESC;
 ```
 
-Bad review rate theo category va payment type:
+Bad review rate theo category và payment type:
 
 ```sql
 SELECT

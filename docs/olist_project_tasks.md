@@ -1,402 +1,247 @@
-# Ke hoach hoan thien do an voi Olist Brazilian E-Commerce Dataset
+# Kế hoạch hoàn thiện đồ án với Olist Brazilian E-Commerce Dataset
 
-## 1. Muc tieu chuyen huong de tai
+## 1. Mục tiêu đề tài
 
-De tai moi nen trinh bay theo huong:
+Đề tài mới nên trình bày theo hướng:
 
-**Xay dung data warehouse va khai pha du lieu thuong mai dien tu tren bo du lieu Olist Brazilian E-Commerce, ket hop Iceberg Cube va mo hinh du doan muc do hai long cua khach hang.**
+**Xây dựng data warehouse và khai phá dữ liệu thương mại điện tử trên bộ dữ liệu Olist Brazilian E-Commerce, kết hợp Iceberg Cube và mô hình dự đoán mức độ hài lòng của khách hàng.**
 
-Bo du lieu moi phu hop hon chu de kinh te/kinh doanh vi mo ta qua trinh van hanh san thuong mai dien tu: don hang, khach hang, nguoi ban, san pham, thanh toan, van chuyen, review va vi tri dia ly.
+Bộ dữ liệu phù hợp với chủ đề kinh tế/kinh doanh vì mô tả quá trình vận hành sàn thương mại điện tử: đơn hàng, khách hàng, người bán, sản phẩm, thanh toán, vận chuyển, review và vị trí địa lý.
 
-## 2. Tong quan dataset da doc trong thu muc `dataset/`
+## 2. Tổng quan dataset
 
-Dataset hien co gom 9 file CSV:
+Dataset hiện có trong thư mục `dataset/` gồm 9 file CSV:
 
-| File | So dong | So cot | Vai tro |
+| File | Số dòng | Số cột | Vai trò |
 |---|---:|---:|---|
-| `olist_orders_dataset.csv` | 99,441 | 8 | Bang don hang, trang thai va cac moc thoi gian xu ly/giao hang |
-| `olist_customers_dataset.csv` | 99,441 | 5 | Thong tin khach hang, city/state/zip prefix |
-| `olist_order_items_dataset.csv` | 112,650 | 7 | Chi tiet san pham trong don hang, seller, gia va phi van chuyen |
-| `olist_order_payments_dataset.csv` | 103,886 | 5 | Phuong thuc thanh toan, so lan tra gop, gia tri thanh toan |
-| `olist_order_reviews_dataset.csv` | 99,224 | 7 | Diem danh gia va noi dung review |
-| `olist_products_dataset.csv` | 32,951 | 9 | Thong tin san pham, danh muc, kich thuoc, khoi luong |
-| `olist_sellers_dataset.csv` | 3,095 | 4 | Thong tin nguoi ban, city/state/zip prefix |
-| `olist_geolocation_dataset.csv` | 1,000,163 | 5 | Vi do/kinh do theo zip code prefix |
-| `product_category_name_translation.csv` | 71 | 2 | Dich ten danh muc san pham tu tieng Bo Dao Nha sang tieng Anh |
+| `olist_orders_dataset.csv` | 99,441 | 8 | Bảng đơn hàng, trạng thái và các mốc thời gian xử lý/giao hàng |
+| `olist_customers_dataset.csv` | 99,441 | 5 | Thông tin khách hàng, city/state/zip prefix |
+| `olist_order_items_dataset.csv` | 112,650 | 7 | Chi tiết sản phẩm trong đơn hàng, seller, giá và phí vận chuyển |
+| `olist_order_payments_dataset.csv` | 103,886 | 5 | Phương thức thanh toán, số lần trả góp, giá trị thanh toán |
+| `olist_order_reviews_dataset.csv` | 99,224 | 7 | Điểm đánh giá và nội dung review |
+| `olist_products_dataset.csv` | 32,951 | 9 | Thông tin sản phẩm, danh mục, kích thước, khối lượng |
+| `olist_sellers_dataset.csv` | 3,095 | 4 | Thông tin người bán, city/state/zip prefix |
+| `olist_geolocation_dataset.csv` | 1,000,163 | 5 | Vĩ độ/kinh độ theo zip code prefix |
+| `product_category_name_translation.csv` | 71 | 2 | Dịch tên danh mục sản phẩm từ tiếng Bồ Đào Nha sang tiếng Anh |
 
-Mot so thong tin nen dua vao bao cao:
+Thông tin nên đưa vào báo cáo:
 
-- Khoang thoi gian don hang: tu `2016-09-04 21:15:19` den `2018-10-17 17:30:18`.
-- Phan bo trang thai don hang:
-  - delivered: 96,478
-  - shipped: 1,107
-  - canceled: 625
-  - unavailable: 609
-  - invoiced: 314
-  - processing: 301
-  - created: 5
-  - approved: 2
-- Phan bo thanh toan:
-  - credit_card: 76,795
-  - boleto: 19,784
-  - voucher: 5,775
-  - debit_card: 1,529
-  - not_defined: 3
-- Phan bo review score:
-  - 5 sao: 57,328
-  - 4 sao: 19,142
-  - 3 sao: 8,179
-  - 2 sao: 3,151
-  - 1 sao: 11,424
-- Bang `orders` co missing o cac cot thoi gian:
-  - `order_approved_at`: 160
-  - `order_delivered_carrier_date`: 1,783
-  - `order_delivered_customer_date`: 2,965
-- Bang `products` co 610 san pham thieu category/name/description/photo, va 2 san pham thieu thong tin kich thuoc/khoi luong.
-- Bang `reviews` thieu nhieu comment text, nhung `review_score` van du de lam bai toan classification.
+- Khoảng thời gian đơn hàng: từ `2016-09-04 21:15:19` đến `2018-10-17 17:30:18`.
+- Phần lớn đơn hàng có trạng thái `delivered`.
+- Payment type phổ biến nhất là `credit_card`, sau đó là `boleto`.
+- Review 5 sao chiếm tỷ lệ lớn nhất, nhưng vẫn có đủ review 1-2 sao để xây dựng bài toán classification.
+- Bảng `orders` có missing ở các cột thời gian giao hàng.
+- Bảng `products` có một số sản phẩm thiếu category/kích thước.
+- Bảng `reviews` thiếu nhiều comment text, nhưng `review_score` vẫn đủ dùng cho bài toán dự đoán review xấu.
 
-## 3. Cac loi/thieu sot cua phien ban Reddit can khac phuc
+## 3. Các thiếu sót của phiên bản Reddit cần khắc phục
 
-Repo hien tai moi co khung, can khac phuc cac diem sau:
+- README cũ bị lỗi encoding tiếng Việt và nội dung vẫn theo đề tài Reddit.
+- Notebook EDA, preprocessing, DWH và model chỉ là placeholder.
+- `src/olap/iceberg_cube.py` chưa cài đặt thuật toán thật.
+- `src/models/train.py` chưa huấn luyện model thật.
+- Streamlit app chỉ có title placeholder.
+- FastAPI chỉ có endpoint `/health`.
+- Chưa có dữ liệu đã xử lý, warehouse, cube result hoặc model artifact.
 
-- README dang bi loi encoding tieng Viet va noi dung van theo de tai Reddit.
-- `data/raw`, `data/processed`, `data/warehouse` chua co du lieu dau ra.
-- Notebook `01_EDA.ipynb` chi co tieu de/import, chua co phan tich.
-- Notebook `02_Preprocessing.ipynb`, `03_DWH_and_Iceberg_Cube.ipynb`, `04_Classification_Model.ipynb` chi co markdown placeholder.
-- `src/olap/iceberg_cube.py` chua cai dat thuat toan, dang `NotImplementedError`.
-- `src/models/train.py` chua huan luyen model, dang `NotImplementedError`.
-- Streamlit app moi co title placeholder.
-- FastAPI moi co endpoint `/health`.
+## 4. Công việc cần làm để đáp ứng yêu cầu của thầy
 
-## 4. Cong viec can lam de dap ung day du yeu cau cua thay
+### 4.1. Cập nhật README và cấu trúc dự án
 
-### 4.1. Cap nhat cau truc va README
+- [x] Chuyển mô tả dự án từ Reddit sang Olist E-Commerce Analytics.
+- [x] Sửa tiếng Việt trong tài liệu sang dạng có dấu.
+- [x] Bổ sung mô tả dataset, mục tiêu phân tích và bài toán khai phá.
+- [x] Cập nhật hướng dẫn chạy pipeline, API, Streamlit và database.
+- [x] Thêm `.env.example` để cấu hình PostgreSQL/SQL Server.
 
-- [ ] Doi ten/mo ta du an tu Reddit sang Olist E-Commerce Analytics.
-- [ ] Sua loi encoding tieng Viet trong README.
-- [ ] Bo sung mo ta day du dataset:
-  - nguon dataset Kaggle;
-  - chu de kinh te/thuong mai dien tu;
-  - so file, so dong, so cot;
-  - y nghia tung bang;
-  - khoa chinh/khoa ngoai;
-  - khoang thoi gian;
-  - cac bien quan trong;
-  - muc tieu phan tich va bai toan khai pha.
-- [ ] Cap nhat huong dan chay pipeline, notebook, API va Streamlit app.
-- [ ] Dua cac file CSV vao dung quy uoc `data/raw/` hoac cap nhat code de dung thu muc `dataset/` hien tai.
+### 4.2. Mô tả đầy đủ bộ dữ liệu
 
-### 4.2. Mo ta day du bo du lieu
-
-Can tao phan rieng trong report/notebook:
-
-- [ ] Mo ta business context: marketplace Olist ket noi seller voi customer tai Brazil.
-- [ ] Ve ERD quan he giua cac bang:
+- [x] Mô tả business context: marketplace Olist kết nối seller với customer tại Brazil.
+- [x] Liệt kê 9 bảng dữ liệu, số dòng, số cột và vai trò từng bảng.
+- [x] Xác định quan hệ khóa giữa các bảng:
   - `orders.customer_id` -> `customers.customer_id`
   - `order_items.order_id` -> `orders.order_id`
   - `order_items.product_id` -> `products.product_id`
   - `order_items.seller_id` -> `sellers.seller_id`
   - `payments.order_id` -> `orders.order_id`
   - `reviews.order_id` -> `orders.order_id`
-  - customer/seller zip prefix -> geolocation zip prefix
-  - `products.product_category_name` -> translation table
-- [ ] Lap data dictionary cho tung bang.
-- [ ] Ghi ro cac van de du lieu:
-  - missing delivery timestamps;
-  - missing product category;
-  - review comments thieu nhieu;
-  - mot order co the co nhieu item;
-  - mot order co the co nhieu payment records;
-  - review co the duplicate theo order va can xu ly.
+  - `products.product_category_name` -> `product_category_name_translation.product_category_name`
+- [x] Ghi rõ các vấn đề dữ liệu: missing timestamp, missing product category, missing review comment, một order có thể có nhiều item/payment.
 
-### 4.3. EDA can thuc hien
+### 4.3. EDA
 
-Notebook chinh: `notebooks/01_EDA.ipynb`.
+Notebook chính: `notebooks/01_EDA.ipynb`.
 
-- [ ] Thong ke tong quan tung bang: shape, columns, missing, duplicate, unique keys.
-- [ ] Phan tich don hang theo thoi gian:
-  - so don theo thang;
-  - doanh thu theo thang;
-  - xu huong tang/giam theo nam 2016-2018.
-- [ ] Phan tich trang thai don hang:
-  - ti le delivered/canceled/shipped/unavailable;
-  - so sanh doanh thu theo status.
-- [ ] Phan tich doanh thu:
-  - tong `price`, `freight_value`, `payment_value`;
-  - top category theo doanh thu;
-  - top seller theo doanh thu;
-  - top state theo doanh thu.
-- [ ] Phan tich thanh toan:
-  - phan bo `payment_type`;
-  - so lan tra gop `payment_installments`;
-  - gia tri thanh toan trung binh theo payment type.
-- [ ] Phan tich van chuyen:
-  - delivery duration = delivered_customer_date - purchase_timestamp;
-  - estimated delivery duration = estimated_delivery_date - purchase_timestamp;
-  - delay_days = delivered_customer_date - estimated_delivery_date;
-  - delayed_flag = delay_days > 0;
-  - delay rate theo state/category/seller.
-- [ ] Phan tich review:
-  - phan bo review score;
-  - review score theo category;
-  - review score theo delivery delay;
-  - review score theo payment type/freight/price.
-- [ ] Phan tich dia ly:
-  - top customer states/cities;
-  - top seller states/cities;
-  - ban do hoac chart phan bo doanh thu theo state.
-- [ ] Ket luan EDA bang cac insight ro rang, khong chi hien chart.
+- [x] Thống kê tổng quan từng bảng: shape, columns, missing, duplicate.
+- [x] Phân tích đơn hàng theo thời gian.
+- [x] Phân tích trạng thái đơn hàng.
+- [x] Phân tích doanh thu theo tháng/category/state.
+- [x] Phân tích payment type và installments.
+- [x] Phân tích delivery days, delay days và delay rate.
+- [x] Phân tích review score và bad review.
+- [x] Tạo các bảng tổng hợp để đưa vào report và dashboard.
 
-### 4.4. Tien xu ly va feature engineering
+### 4.4. Tiền xử lý và feature engineering
 
-Notebook chinh: `notebooks/02_Preprocessing.ipynb`.
-Code nen dua vao `src/etl/transform.py`.
+Notebook chính: `notebooks/02_Preprocessing.ipynb`.
+Code chính: `src/etl/transform.py`.
 
-- [ ] Chuyen cac cot timestamp sang datetime.
-- [ ] Chuyen cac cot tien/so luong/kich thuoc sang numeric.
-- [ ] Xu ly missing:
-  - product category thieu -> `unknown`;
-  - product dimension thieu -> median theo category hoac median toan bo;
-  - delivery timestamp thieu -> giu lai cho EDA status, nhung loai khoi model neu khong delivered;
-  - review comment missing -> khong dung text trong model ban dau.
-- [ ] Join category translation de co category tieng Anh.
-- [ ] Tao bang order-level da flatten cho ML:
-  - moi dong la 1 order;
-  - aggregate item count, total price, total freight;
-  - aggregate payment value, payment type chinh, installments;
-  - join customer/seller/product/category/review.
-- [ ] Tao feature:
-  - `delivery_days`;
-  - `approval_hours`;
-  - `carrier_days`;
-  - `delay_days`;
-  - `is_delayed`;
-  - `order_month`, `order_year`, `order_day_of_week`;
-  - `item_count`;
-  - `total_price`;
-  - `total_freight`;
-  - `freight_ratio`;
-  - `payment_installments`;
-  - `customer_state`;
-  - `seller_state`;
-  - `product_category_name_english`.
-- [ ] Tao target classification:
-  - khuyen nghi: `bad_review = 1` neu `review_score <= 2`, `bad_review = 0` neu `review_score >= 4`;
-  - co the bo `review_score = 3` de target ro hon.
-- [ ] Luu output:
-  - `data/processed/orders_clean.csv`;
-  - `data/processed/order_features.csv`;
-  - `data/processed/model_dataset.csv`.
+- [x] Chuyển timestamp sang datetime.
+- [x] Chuyển tiền, số lượng, kích thước sang numeric.
+- [x] Xử lý missing product category bằng `unknown`.
+- [x] Điền missing product dimension bằng median.
+- [x] Join category translation để có tên category tiếng Anh.
+- [x] Tạo bảng order-level cho EDA, ML và dashboard.
+- [x] Tạo feature:
+  - `delivery_days`
+  - `approval_hours`
+  - `carrier_days`
+  - `delay_days`
+  - `is_delayed`
+  - `order_year_month`
+  - `order_month`
+  - `order_day_of_week`
+  - `item_count`
+  - `total_price`
+  - `total_freight`
+  - `freight_ratio`
+  - `payment_type`
+  - `max_installments`
+  - `customer_state`
+  - `seller_state`
+  - `product_category_name_english`
+- [x] Tạo target `bad_review`: 1 nếu `review_score <= 2`, 0 nếu `review_score >= 4`.
+- [x] Lưu output vào `data/processed/`.
 
-### 4.5. Xay dung data warehouse
+### 4.5. Data warehouse
 
-Notebook chinh: `notebooks/03_DWH_and_Iceberg_Cube.ipynb`.
-Code nen dua vao `src/etl/load.py`.
+Notebook chính: `notebooks/03_DWH_and_Iceberg_Cube.ipynb`.
+Code chính: `src/etl/load.py`.
 
-Thiet ke star schema de thay ro phan DWH:
+- [x] Không dùng SQLite.
+- [x] Hỗ trợ PostgreSQL và SQL Server qua SQLAlchemy.
+- [x] Tạo star schema:
+  - `fact_order_items`
+  - `dim_date`
+  - `dim_customer`
+  - `dim_seller`
+  - `dim_product`
+  - `dim_payment`
+  - `dim_order_status`
+- [x] Fact table có grain: 1 dòng = 1 item trong 1 order.
+- [x] Measures chính: `price`, `freight_value`, `review_score`, `delivery_days`, `delay_days`, `is_delayed`, `bad_review`.
+- [x] Viết script `scripts/load_warehouse.py` để load warehouse vào database.
+- [x] Đã load thành công vào PostgreSQL `olist_dwh`.
 
-- [ ] `fact_order_items`
-  - grain: 1 dong = 1 item trong 1 order;
-  - measures: `price`, `freight_value`, `payment_value_allocated`, `delivery_days`, `delay_days`, `review_score`;
-  - keys: `order_key`, `date_key`, `customer_key`, `seller_key`, `product_key`, `payment_key`, `status_key`.
-- [ ] `dim_date`
-  - date, year, quarter, month, day, day_of_week.
-- [ ] `dim_customer`
-  - customer_id, customer_unique_id, zip_prefix, city, state, lat/lng neu aggregate geolocation.
-- [ ] `dim_seller`
-  - seller_id, zip_prefix, city, state, lat/lng neu aggregate geolocation.
-- [ ] `dim_product`
-  - product_id, category_name, category_english, weight, length, height, width.
-- [ ] `dim_payment`
-  - payment_type, installments_group.
-- [ ] `dim_order_status`
-  - order_status.
-- [ ] Luu warehouse vao SQLite:
-  - `data/warehouse/olist_warehouse.db`.
-- [ ] Viet SQL kiem tra:
-  - tong doanh thu theo thang;
-  - doanh thu theo category/state;
-  - delay rate theo seller_state;
-  - review trung binh theo category;
-  - top seller/category/customer_state.
+### 4.6. Iceberg Cube
 
-### 4.6. Cai dat Iceberg Cube
+Code chính: `src/olap/iceberg_cube.py`.
 
-Code chinh: `src/olap/iceberg_cube.py`.
+- [x] Thay placeholder bằng thuật toán thật.
+- [x] Hỗ trợ nhiều dimension và tính cube cho mọi tổ hợp dimension không rỗng.
+- [x] Hỗ trợ các measure:
+  - `count_orders`
+  - `sum_revenue`
+  - `avg_review_score`
+  - `avg_delivery_days`
+  - `delay_rate`
+  - `bad_review_rate`
+- [x] Có threshold iceberg:
+  - `count_orders >= min_count`
+  - hoặc `sum_revenue >= min_revenue`
+  - hoặc `bad_review_rate >= high_bad_review_rate` với support đủ lớn.
+- [x] Tính cube theo 4 chủ đề:
+  - doanh thu theo thời gian/category/state;
+  - chất lượng giao hàng theo seller state/category/delay;
+  - mức độ hài lòng theo payment/installments/review group;
+  - trade lane theo customer state/seller state/review group.
+- [x] Lưu kết quả vào `data/warehouse/iceberg_cube_results.csv`.
 
-Can thay placeholder bang ham that:
+### 4.7. Khai phá dữ liệu: Classification
 
-- [ ] Input:
-  - DataFrame hoac bang tu warehouse;
-  - danh sach dimensions;
-  - measure;
-  - aggregate functions;
-  - support threshold.
-- [ ] Output:
-  - DataFrame gom cac cuboid thoa dieu kien iceberg.
-- [ ] Ho tro cac aggregate:
-  - `count_orders`;
-  - `sum_revenue`;
-  - `avg_review_score`;
-  - `avg_delivery_days`;
-  - `delay_rate`;
-  - `bad_review_rate`.
-- [ ] Chay cube theo cac chu de:
-  - `month x category x customer_state`;
-  - `seller_state x category x delayed_flag`;
-  - `payment_type x installments_group x review_group`;
-  - `customer_state x seller_state x delivery_status`.
-- [ ] Dieu kien iceberg:
-  - `count_orders >= 100`, hoac
-  - `sum_revenue >= 10000`, hoac
-  - `bad_review_rate >= 0.25` voi `count_orders >= 50`.
-- [ ] Luu ket qua:
-  - `data/warehouse/iceberg_cube_results.csv`;
-  - hoac table `iceberg_cube_results` trong SQLite.
-- [ ] Trinh bay trong notebook:
-  - giai thich concept iceberg cube;
-  - so sanh cube day du voi cube da loc threshold;
-  - liet ke top pattern kinh doanh dang chu y.
+Notebook chính: `notebooks/04_Classification_Model.ipynb`.
+Code chính: `src/models/train.py` và `src/models/predict.py`.
 
-### 4.7. Khai pha du lieu: Classification
+Bài toán: **dự đoán đơn hàng có review xấu hay không**.
 
-Notebook chinh: `notebooks/04_Classification_Model.ipynb`.
-Code nen dua vao `src/models/train.py` va `src/models/predict.py`.
-
-Bai toan khuyen nghi:
-
-**Du doan don hang co review xau hay khong.**
-
-Target:
-
-- `bad_review = 1` neu `review_score <= 2`.
-- `bad_review = 0` neu `review_score >= 4`.
-- Loai `review_score = 3` khoi tap train/evaluate de tranh nhan trung tinh.
-
-Feature nen dung:
-
-- `total_price`
-- `total_freight`
-- `freight_ratio`
-- `payment_type`
-- `payment_installments`
-- `item_count`
-- `product_category_name_english`
-- `customer_state`
-- `seller_state`
-- `delivery_days`
-- `delay_days`
-- `is_delayed`
-- `order_month`
-- `order_day_of_week`
-
-Model can thu:
-
-- [ ] Baseline: Logistic Regression.
-- [ ] Tree-based: Random Forest.
-- [ ] Gradient Boosting hoac HistGradientBoostingClassifier neu muon nang diem.
-
-Danh gia:
-
-- [ ] Train/test split co stratify.
-- [ ] Xu ly class imbalance bang `class_weight='balanced'` hoac resampling.
-- [ ] Metrics:
+- [x] Target: `bad_review`.
+- [x] Feature gồm giá trị đơn hàng, phí ship, payment, category, state, delivery delay và thời gian mua hàng.
+- [x] Có preprocessing pipeline cho numeric/categorical features.
+- [x] Có Logistic Regression, Random Forest và HistGradientBoosting.
+- [x] Model mặc định: Random Forest.
+- [x] Metrics:
   - accuracy;
   - precision;
   - recall;
   - F1-score;
   - ROC-AUC;
   - confusion matrix.
-- [ ] Giai thich model:
-  - feature importance;
-  - nhan xet yeu to nao lam tang nguy co review xau.
-- [ ] Luu model:
-  - `models/bad_review_classifier.pkl`.
+- [x] Lưu model vào `models/bad_review_classifier.pkl`.
 
-### 4.8. Ung dung web
+Kết quả đã train:
 
-Khuyen nghi dung Streamlit vi repo da co `app/Home.py`.
+- Accuracy: `0.8814`
+- Precision lớp bad review: `0.6799`
+- Recall lớp bad review: `0.4865`
+- F1 lớp bad review: `0.5672`
+- ROC-AUC: `0.7953`
 
-Can bien app tu placeholder thanh dashboard that:
+### 4.8. Ứng dụng web
 
-- [ ] Trang tong quan:
-  - tong so order;
-  - tong doanh thu;
-  - review trung binh;
-  - delay rate;
-  - bad review rate.
-- [ ] Trang EDA:
-  - doanh thu theo thang;
-  - don hang theo status;
-  - payment type;
-  - review distribution;
-  - top category/seller/state.
-- [ ] Trang warehouse/OLAP:
-  - filter theo thoi gian/category/state;
-  - hien ket qua Iceberg Cube;
-  - bang top pattern can chu y.
-- [ ] Trang du doan:
-  - form nhap thong tin order;
-  - goi model da train;
-  - tra ve xac suat `bad_review`;
-  - hien giai thich ngan gon.
-- [ ] Neu co API:
-  - FastAPI endpoint `/predict`;
-  - endpoint `/metrics`;
-  - endpoint `/cube`.
+Code chính: `app/Home.py`.
 
-### 4.9. Bao cao va slide
+- [x] Trang overview: orders, revenue, average review, delay rate, bad review rate.
+- [x] Trang EDA: doanh thu theo tháng, order status, review distribution, category, payment, state.
+- [x] Trang Iceberg Cube: xem các pattern theo cube theme.
+- [x] Trang Prediction: nhập thông tin đơn hàng và dự đoán xác suất review xấu.
 
-- [ ] Viet report trong `docs/report.md` hoac file Word/PDF.
-- [ ] Noi dung report can co:
-  - gioi thieu bai toan;
-  - mo ta dataset;
-  - EDA va insight;
-  - tien xu ly;
-  - DWH schema;
-  - Iceberg Cube;
-  - Classification;
-  - Web app;
-  - ket luan va huong phat trien.
-- [ ] Tao hinh:
-  - ERD;
-  - star schema;
-  - pipeline architecture;
-  - bieu do EDA;
-  - confusion matrix;
-  - screenshot app.
-- [ ] Slide seminar nen tap trung vao:
-  - vi sao chon dataset kinh te/thuong mai dien tu;
-  - thiet ke DWH;
-  - co che Iceberg Cube;
-  - ket qua model;
-  - demo app.
+### 4.9. API
 
-## 5. Thu tu thuc hien khuyen nghi
+Code chính: `api/main.py`.
 
-1. Chuyen repo tu Reddit sang Olist trong README, ten app, API title va notebook title.
-2. Dua dataset vao dung thu muc raw va tao script load du lieu.
-3. Hoan thien notebook `01_EDA.ipynb`.
-4. Hoan thien preprocessing va tao `model_dataset.csv`.
-5. Thiet ke va build SQLite data warehouse.
-6. Cai dat Iceberg Cube va sinh ket qua cube.
-7. Train model classification bad review.
-8. Nang cap Streamlit app thanh dashboard + prediction app.
-9. Viet report, tao slide va screenshot demo.
-10. Chay lai toan bo pipeline de dam bao co output that, khong con placeholder.
+- [x] `/health`
+- [x] `/summary`
+- [x] `/metrics`
+- [x] `/cube`
+- [x] `/predict`
 
-## 6. Tieu chi hoan thanh
+### 4.10. Báo cáo và tài liệu
 
-Do an chi nen xem la dat khi co day du cac artifact sau:
+- [x] README mới.
+- [x] Database setup guide.
+- [x] Report khung.
+- [x] Notebook cho EDA, preprocessing, DWH/Iceberg Cube và classification.
+- [x] Checklist công việc.
 
-- [ ] README moi khong con noi dung Reddit.
-- [ ] Data dictionary va mo ta dataset day du.
-- [ ] Notebook EDA co chart, insight va ket luan.
-- [ ] Notebook preprocessing co output file trong `data/processed/`.
-- [ ] SQLite warehouse trong `data/warehouse/`.
-- [ ] Star schema/ERD trong report.
-- [ ] Iceberg Cube chay duoc va co ket qua cu the.
-- [ ] Model classification co metrics va file model da luu.
-- [ ] Streamlit app chay duoc va hien dashboard/prediction.
-- [ ] Report/slide co anh minh hoa va ket qua thuc nghiem.
-- [ ] Khong con `NotImplementedError` trong cac module chinh.
+## 5. Thứ tự chạy lại toàn bộ dự án
+
+```powershell
+.\.venv312\Scripts\Activate.ps1
+python scripts/build_processed.py
+python scripts/load_warehouse.py
+python scripts/run_iceberg_cube.py
+python scripts/train_bad_review_model.py
+streamlit run app/Home.py
+```
+
+API:
+
+```powershell
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## 6. Tiêu chí hoàn thành
+
+Dự án hiện đã có:
+
+- [x] Dataset kinh tế/thương mại điện tử rõ ràng.
+- [x] Mô tả dataset đầy đủ.
+- [x] EDA notebook.
+- [x] Preprocessing pipeline.
+- [x] Data warehouse PostgreSQL/SQL Server.
+- [x] Iceberg Cube.
+- [x] Classification model.
+- [x] Streamlit web app.
+- [x] FastAPI backend.
+- [x] Report và tài liệu hướng dẫn.
+- [x] Không còn `NotImplementedError` trong các module chính.
