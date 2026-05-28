@@ -14,7 +14,7 @@ ENV/
 .ipynb_checkpoints
 
 # Data
-dataset/
+dataset/*.csv
 data/raw/
 data/processed/
 models/*.pkl
