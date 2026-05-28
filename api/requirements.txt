@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-pandas
-joblib
-scikit-learn
-pydantic
