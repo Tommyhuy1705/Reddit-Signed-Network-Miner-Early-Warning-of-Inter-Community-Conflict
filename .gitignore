@@ -5,6 +5,7 @@ __pycache__/
 
 # Environments
 .venv/
+.venv312/
 venv/
 env/
 ENV/
@@ -13,11 +14,19 @@ ENV/
 .ipynb_checkpoints
 
 # Data
+dataset/
 data/raw/
 data/processed/
+models/*.pkl
+models/*.joblib
+models/*metrics.json
 
-# SQLite
+# Local secrets
+.env
+
+# Local databases / generated warehouse exports
 *.db
+data/warehouse/*.csv
 
 # VSCode
 .vscode/
