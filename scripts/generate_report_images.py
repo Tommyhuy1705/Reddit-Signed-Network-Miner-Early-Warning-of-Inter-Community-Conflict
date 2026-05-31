@@ -217,57 +217,103 @@ def generate_model_images(model_dataset: pd.DataFrame) -> None:
 
 
 def generate_diagrams() -> None:
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(15, 9))
     ax.axis("off")
-    boxes = {
-        "orders": (0.42, 0.55),
-        "customers": (0.08, 0.72),
-        "order_items": (0.42, 0.30),
-        "payments": (0.75, 0.72),
-        "reviews": (0.75, 0.50),
-        "products": (0.08, 0.30),
-        "sellers": (0.75, 0.25),
-        "translation": (0.08, 0.08),
-        "geolocation": (0.42, 0.08),
-    }
-    labels = {
-        "orders": "orders\norder_id, customer_id\nstatus, timestamps",
-        "customers": "customers\ncustomer_id\ncity, state, zip",
-        "order_items": "order_items\norder_id, product_id\nseller_id, price, freight",
-        "payments": "order_payments\norder_id\npayment_type, value",
-        "reviews": "order_reviews\norder_id\nreview_score",
-        "products": "products\nproduct_id\ncategory, dimensions",
-        "sellers": "sellers\nseller_id\ncity, state, zip",
-        "translation": "category_translation\ncategory_name\ncategory_english",
-        "geolocation": "geolocation\nzip_prefix\nlat, lng",
-    }
-    for key, (x, y) in boxes.items():
+
+    def draw_entity(
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        title: str,
+        rows: list[str],
+    ) -> tuple[float, float, float, float]:
+        from matplotlib.patches import FancyBboxPatch, Rectangle
+
+        body = FancyBboxPatch(
+            (x, y),
+            width,
+            height,
+            boxstyle="round,pad=0.01,rounding_size=0.01",
+            linewidth=1.7,
+            edgecolor="#4f72c4",
+            facecolor="#f3f7ff",
+            zorder=3,
+        )
+        ax.add_patch(body)
+        header_h = 0.052
+        ax.add_patch(Rectangle((x, y + height - header_h), width, header_h, linewidth=0, facecolor="#4f72c4", zorder=4))
         ax.text(
-            x,
-            y,
-            labels[key],
+            x + width / 2,
+            y + height - header_h / 2,
+            title,
             ha="center",
             va="center",
-            fontsize=10,
-            bbox=dict(boxstyle="round,pad=0.45", facecolor="#eef3ff", edgecolor="#4b6cb7"),
+            fontsize=10.5,
+            fontweight="bold",
+            color="white",
+            zorder=5,
         )
+        available_h = height - header_h - 0.04
+        row_step = min(0.039, available_h / max(len(rows), 1))
+        start_y = y + height - header_h - 0.022
+        for idx, row in enumerate(rows):
+            weight = "bold" if row.startswith("PK") or row.startswith("FK") else "normal"
+            ax.text(x + 0.015, start_y - idx * row_step, row, ha="left", va="top", fontsize=8.7, fontweight=weight, zorder=5)
+        return (x, y, width, height)
 
-    def arrow(source: str, target: str) -> None:
-        ax.annotate("", xy=boxes[target], xytext=boxes[source], arrowprops=dict(arrowstyle="->", color="#333", lw=1.4))
+    def point(box: tuple[float, float, float, float], side: str, offset: float = 0.5) -> tuple[float, float]:
+        x, y, w, h = box
+        if side == "left":
+            return x, y + h * offset
+        if side == "right":
+            return x + w, y + h * offset
+        if side == "top":
+            return x + w * offset, y + h
+        return x + w * offset, y
 
-    for source, target in [
-        ("customers", "orders"),
-        ("orders", "order_items"),
-        ("orders", "payments"),
-        ("orders", "reviews"),
-        ("products", "order_items"),
-        ("sellers", "order_items"),
-        ("translation", "products"),
-        ("geolocation", "customers"),
-        ("geolocation", "sellers"),
-    ]:
-        arrow(source, target)
-    ax.set_title("ERD quan hệ giữa các bảng Olist", fontsize=15, fontweight="bold")
+    def connect(
+        source: tuple[float, float],
+        target: tuple[float, float],
+        via: list[tuple[float, float]] | None = None,
+        label: str | None = None,
+    ) -> None:
+        pts = [source] + (via or []) + [target]
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        ax.plot(xs, ys, color="#374151", lw=1.4, zorder=1)
+        ax.annotate("", xy=target, xytext=pts[-2], arrowprops=dict(arrowstyle="-|>", color="#374151", lw=1.4, shrinkA=0, shrinkB=8), zorder=2)
+        if label:
+            mid = pts[len(pts) // 2]
+            ax.text(mid[0], mid[1] + 0.012, label, fontsize=8, color="#4b5563", ha="center", va="bottom")
+
+    entities = {
+        "customers": draw_entity(0.05, 0.70, 0.20, 0.17, "customers", ["PK customer_id", "customer_unique_id", "city, state", "zip_prefix"]),
+        "orders": draw_entity(0.39, 0.66, 0.22, 0.20, "orders", ["PK order_id", "FK customer_id", "order_status", "purchase/ship dates"]),
+        "payments": draw_entity(0.75, 0.72, 0.20, 0.16, "order_payments", ["FK order_id", "payment_type", "installments", "payment_value"]),
+        "reviews": draw_entity(0.75, 0.52, 0.20, 0.15, "order_reviews", ["FK order_id", "review_score", "review dates"]),
+        "order_items": draw_entity(0.38, 0.36, 0.24, 0.22, "order_items", ["FK order_id", "FK product_id", "FK seller_id", "price", "freight_value"]),
+        "products": draw_entity(0.05, 0.36, 0.22, 0.20, "products", ["PK product_id", "FK category_name", "weight", "dimensions"]),
+        "sellers": draw_entity(0.75, 0.32, 0.20, 0.17, "sellers", ["PK seller_id", "city, state", "zip_prefix"]),
+        "translation": draw_entity(0.05, 0.08, 0.22, 0.17, "category_translation", ["PK category_name", "category_english"]),
+        "geolocation": draw_entity(0.39, 0.08, 0.22, 0.17, "geolocation", ["PK zip_prefix", "lat", "lng", "city, state"]),
+    }
+
+    # Relationship lines are routed outside entity interiors.
+    connect(point(entities["customers"], "right", 0.55), point(entities["orders"], "left", 0.58), label="customer_id")
+    connect(point(entities["orders"], "bottom", 0.48), point(entities["order_items"], "top", 0.48), label="order_id")
+    connect(point(entities["orders"], "right", 0.72), point(entities["payments"], "left", 0.56), via=[(0.67, 0.80), (0.67, 0.81)], label="order_id")
+    connect(point(entities["orders"], "right", 0.36), point(entities["reviews"], "left", 0.56), via=[(0.67, 0.63)], label="order_id")
+    connect(point(entities["products"], "right", 0.50), point(entities["order_items"], "left", 0.48), label="product_id")
+    connect(point(entities["order_items"], "right", 0.50), point(entities["sellers"], "left", 0.55), label="seller_id")
+    connect(point(entities["translation"], "top", 0.48), point(entities["products"], "bottom", 0.48), label="category")
+    connect(point(entities["geolocation"], "left", 0.38), point(entities["customers"], "bottom", 0.50), via=[(0.31, 0.14), (0.31, 0.66)], label="zip")
+    connect(point(entities["geolocation"], "right", 0.45), point(entities["sellers"], "bottom", 0.50), via=[(0.69, 0.16), (0.69, 0.28)], label="zip")
+
+    ax.text(0.5, 0.95, "ERD quan hệ giữa các bảng Olist", ha="center", va="center", fontsize=18, fontweight="bold", color="#111827")
+    ax.text(0.5, 0.025, "Các mũi tên biểu diễn khóa liên kết chính giữa các bảng", ha="center", va="center", fontsize=10, color="#4b5563")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
     save(fig, "erd_olist_relationships.png")
 
     fig, ax = plt.subplots(figsize=(14, 9))
